@@ -43,7 +43,7 @@ module master_fsm(
 
  
   always @(*) begin
-    // defaults
+    
     state_next = state_present;
     idx_next   = idx_present;
     req     = req;
@@ -87,4 +87,5 @@ module master_fsm(
   end
 
 endmodule
+
 
