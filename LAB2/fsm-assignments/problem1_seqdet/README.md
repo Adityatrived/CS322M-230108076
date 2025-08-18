@@ -7,7 +7,8 @@ This repository contains a Verilog implementation of a Mealy finite state machin
 The sequence detector is implemented as a Mealy FSM with 4 states that can detect overlapping occurrences of the pattern "1101". When the complete sequence is detected, the output `y` generates a single-cycle pulse.
 
 ### State Diagram
-```
+![state diagram](waves/state_diagram_seqdet.jpg)
+
 States:
 - init (00): Initial state, no match
 - one (01):  Detected '1'
