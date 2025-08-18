@@ -101,6 +101,9 @@ The slave FSM uses edge detection rather than explicit states:
 3. *Acknowledge Generation*: Asserts ack for exactly 2 clock cycles
 4. *Handshake Completion*: Waits for req to go low before clearing ack
 
+### State Diagram
+![state diagram](state_diagram/state_diagram_master_slave.jpg)
+
 ### Timing Control
 
 - ack_cnt: 2-bit counter ensuring ack is held for exactly 2 cycles
