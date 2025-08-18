@@ -112,6 +112,8 @@ So, in simulation:
 - **Tick period = 400 ns** (much faster than 1 second).  
 - This makes simulation finish quickly.
 
+![TICKS](waves/VS_CODE_TICKS_DISPLAY.png)
+
 #### Waveform Inspection
 In GTKWave, we checked:
 - The **time difference** between two rising edges of `tick`.
@@ -144,8 +146,8 @@ In GTKWave, we checked:
 - After **2 ticks** in Yellow → transition to the other direction’s Green.  
 - This cycle repeats forever.
 
-### State Transition Diagram
-
+### State Diagram
+![state diagram](waves/state_diagram_traffic_fsm.jpg)
 
 ---
 
