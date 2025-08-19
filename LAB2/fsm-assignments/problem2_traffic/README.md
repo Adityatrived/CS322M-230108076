@@ -171,7 +171,7 @@ We use **Icarus Verilog** for simulation.
 
 ### Step 1: Compile
 ```
-iverilog -o traffic_sim design.sv testbench.sv
+iverilog -o traffic_sim traffic_light.v tb_traffic_light.v
 ```
 
 ### Step 1: Compile
@@ -182,7 +182,7 @@ vvp traffic_sim
 
 ### Step 3: Visualize Waveforms
 ```
-gtkwave waveform.vcd
+gtkwave dump.vcd
 
 ```
 
