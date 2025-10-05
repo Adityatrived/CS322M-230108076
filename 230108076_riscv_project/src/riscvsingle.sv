@@ -285,7 +285,7 @@ module imem(input  logic [31:0] a,
   logic [31:0] RAM[63:0];
 
   initial
-      $readmemh("../tests/riscvtest.txt",RAM);
+    $readmemh("../tests/rvx10.hex",RAM);
 
   assign rd = RAM[a[31:2]]; // word aligned
 endmodule
@@ -343,3 +343,4 @@ module alu(input  logic [31:0] a, b,
   assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
   
 endmodule
+
