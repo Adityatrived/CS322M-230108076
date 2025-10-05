@@ -1,0 +1,65 @@
+$date
+	Sun Oct 05 17:25:16 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module top $end
+$var wire 32 ! DataAdr [31:0] $end
+$var wire 1 " MemWrite $end
+$var wire 32 # WriteData [31:0] $end
+$var reg 1 $ clk $end
+$var reg 1 % reset $end
+$scope module dut $end
+$var wire 32 & DataAdr [31:0] $end
+$var wire 1 " MemWrite $end
+$var wire 32 ' WriteData [31:0] $end
+$var wire 1 $ clk $end
+$var wire 1 % reset $end
+$var wire 32 ( ReadData [31:0] $end
+$var wire 32 ) Instr [31:0] $end
+$var wire 32 * ALUResult [31:0] $end
+$var reg 32 + PC [31:0] $end
+$scope module dmem_inst $end
+$var wire 32 , a [31:0] $end
+$var wire 1 $ clk $end
+$var wire 32 - wd [31:0] $end
+$var wire 1 " we $end
+$var wire 32 . rd [31:0] $end
+$upscope $end
+$scope module imem_inst $end
+$var wire 32 / a [31:0] $end
+$var wire 32 0 rd [31:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+b10010011 0
+b0 /
+bx .
+b11001 -
+b1100100 ,
+b0 +
+b100 *
+b10010011 )
+bx (
+b11001 '
+b1100100 &
+1%
+0$
+b11001 #
+1"
+b1100100 !
+$end
+#5
+b11001 (
+b11001 .
+1$
+#10
+0$
+0%
