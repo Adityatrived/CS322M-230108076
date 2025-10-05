@@ -1,83 +1,3 @@
-// riscvsingle.sv
-
-// RISC-V single-cycle processor
-// From Section 7.6 of Digital Design & Computer Architecture
-// 27 April 2020
-// David_Harris@hmc.edu 
-// Sarah.Harris@unlv.edu
-
-// run 210
-// Expect simulator to print "Simulation succeeded"
-// when the value 25 (0x19) is written to address 100 (0x64)
-
-// Single-cycle implementation of RISC-V (RV32I)
-// User-level Instruction Set Architecture V2.2 (May 7, 2017)
-// Implements a subset of the base integer instructions:
-//    lw, sw
-//    add, sub, and, or, slt, 
-//    addi, andi, ori, slti
-//    beq
-//    jal
-// Exceptions, traps, and interrupts not implemented
-// little-endian memory
-
-// 31 32-bit registers x1-x31, x0 hardwired to 0
-// R-Type instructions
-//   add, sub, and, or, slt
-//   INSTR rd, rs1, rs2
-//   Instr[31:25] = funct7 (funct7b5 & opb5 = 1 for sub, 0 for others)
-//   Instr[24:20] = rs2
-//   Instr[19:15] = rs1
-//   Instr[14:12] = funct3
-//   Instr[11:7]  = rd
-//   Instr[6:0]   = opcode
-// I-Type Instructions
-//   lw, I-type ALU (addi, andi, ori, slti)
-//   lw:         INSTR rd, imm(rs1)
-//   I-type ALU: INSTR rd, rs1, imm (12-bit signed)
-//   Instr[31:20] = imm[11:0]
-//   Instr[24:20] = rs2
-//   Instr[19:15] = rs1
-//   Instr[14:12] = funct3
-//   Instr[11:7]  = rd
-//   Instr[6:0]   = opcode
-// S-Type Instruction
-//   sw rs2, imm(rs1) (store rs2 into address specified by rs1 + immm)
-//   Instr[31:25] = imm[11:5] (offset[11:5])
-//   Instr[24:20] = rs2 (src)
-//   Instr[19:15] = rs1 (base)
-//   Instr[14:12] = funct3
-//   Instr[11:7]  = imm[4:0]  (offset[4:0])
-//   Instr[6:0]   = opcode
-// B-Type Instruction
-//   beq rs1, rs2, imm (PCTarget = PC + (signed imm x 2))
-//   Instr[31:25] = imm[12], imm[10:5]
-//   Instr[24:20] = rs2
-//   Instr[19:15] = rs1
-//   Instr[14:12] = funct3
-//   Instr[11:7]  = imm[4:1], imm[11]
-//   Instr[6:0]   = opcode
-// J-Type Instruction
-//   jal rd, imm  (signed imm is multiplied by 2 and added to PC, rd = PC+4)
-//   Instr[31:12] = imm[20], imm[10:1], imm[11], imm[19:12]
-//   Instr[11:7]  = rd
-//   Instr[6:0]   = opcode
-
-//   Instruction  opcode    funct3    funct7
-//   add          0110011   000       0000000
-//   sub          0110011   000       0100000
-//   and          0110011   111       0000000
-//   or           0110011   110       0000000
-//   slt          0110011   010       0000000
-//   addi         0010011   000       immediate
-//   andi         0010011   111       immediate
-//   ori          0010011   110       immediate
-//   slti         0010011   010       immediate
-//   beq          1100011   000       immediate
-//   lw	          0000011   010       immediate
-//   sw           0100011   010       immediate
-//   jal          1101111   immediate immediate
-
 module testbench();
 
   logic        clk;
@@ -100,6 +20,15 @@ module testbench();
     begin
       clk <= 1; # 5; clk <= 0; # 5;
     end
+  always @(posedge clk) begin
+     $display("PC=0x%0h MemWrite=%b DataAdr=0x%0h WriteData=0x%0h",
+         dut.PC, dut.MemWrite, dut.DataAdr, dut.WriteData);
+end
+
+//    always @(posedge clk) begin
+//   $display("PC=%0d  MemWrite=%b  DataAdr=%0d  WriteData=%0d", 
+//             dut.PC, dut.MemWrite, dut.DataAdr, dut.WriteData);
+// end
 
   // check results
   always @(negedge clk)
@@ -116,8 +45,11 @@ module testbench();
         end
       end
     end
-
-  endmodule
+    initial begin
+  $dumpfile("wave.vcd");
+  $dumpvars(0, testbench);
+end
+endmodule
 
 module top(input  logic        clk, reset, 
            output logic [31:0] WriteData, DataAdr, 
@@ -143,7 +75,7 @@ module riscvsingle(input  logic        clk, reset,
   logic [1:0] ResultSrc, ImmSrc;
   logic [4:0] ALUControl;
 
-  controller c(Instr[6:0], Instr[14:12], Instr[31:25], Zero,
+  controller c(Instr[6:0], Instr[14:12], Instr[30],Instr[31:25], Zero,
                ResultSrc, MemWrite, PCSrc,
                ALUSrc, RegWrite, Jump,
                ImmSrc, ALUControl);
@@ -156,7 +88,8 @@ endmodule
 
 module controller(input  logic [6:0] op,
                   input  logic [2:0] funct3,
-                  input  logic [6:0] funct7,
+                  input  logic       funct7b5,
+                  input logic [6:0] funct7,
                   input  logic       Zero,
                   output logic [1:0] ResultSrc,
                   output logic       MemWrite,
@@ -170,7 +103,7 @@ module controller(input  logic [6:0] op,
 
   maindec md(op, ResultSrc, MemWrite, Branch,
              ALUSrc, RegWrite, Jump, ImmSrc, ALUOp);
-  aludec  ad(op[5], funct3, funct7, ALUOp, ALUControl);
+  aludec  ad(op[5], funct3,funct7, funct7b5, ALUOp, ALUControl);
 
   assign PCSrc = Branch & Zero | Jump;
 endmodule
@@ -197,69 +130,48 @@ module maindec(input  logic [6:0] op,
       7'b1100011: controls = 11'b0_10_0_0_00_1_01_0; // beq
       7'b0010011: controls = 11'b1_00_1_0_00_0_10_0; // I-type ALU
       7'b1101111: controls = 11'b1_11_0_0_10_0_00_1; // jal
-      7'b0001011: controls = 11'b1_xx_0_0_00_0_11_0;
+      7'b0001011: controls = 11'b1_xx_0_0_00_0_11_0; // RVX10
       default:    controls = 11'bx_xx_x_x_xx_x_xx_x; // non-implemented instruction
     endcase
 endmodule
 
 module aludec(input  logic       opb5,
               input  logic [2:0] funct3,
-              input  logic [6:0] funct7, 
+              input logic [6:0] funct7,
+              input  logic       funct7b5, 
               input  logic [1:0] ALUOp,
               output logic [4:0] ALUControl);
 
   logic  RtypeSub;
-  assign RtypeSub = funct7[5] & opb5;  // TRUE for R-type subtract instruction
+  assign RtypeSub = funct7b5 & opb5;  // TRUE for R-type subtract instruction
 
   always_comb
     case(ALUOp)
       2'b00:                ALUControl = 5'b00000; // addition
       2'b01:                ALUControl = 5'b00001; // subtraction
-      2'b11: begin
-        case(funct7)
-                7'b0000000: begin
-                  case(funct3)
-                    3'b000: ALUControl = 5'b01000;
-                    3'b001: ALUControl = 5'b01001;
-                    3'b010: ALUControl = 5'b01010;
-                    default: ALUControl = 5'bxxxxx;
-                  endcase
-                end
-                7'b0000001: begin
-                  case(funct3)
-                    3'b000: ALUControl = 5'b01011;
-                    3'b001: ALUControl = 5'b01100;
-                    3'b010: ALUControl = 5'b01101;
-                    3'b011: ALUControl = 5'b01110;
-                    default: ALUControl = 5'bxxxxx;
-                  endcase
-                end
-                7'b0000010: begin
-                  case(funct3)
-                    3'b000: ALUControl = 5'b01111;
-                    3'b001: ALUControl = 5'b10000;
-                    default: ALUControl = 5'bxxxxx;
-                  endcase
-                end
-                7'b0000011: begin
-                  case(funct3)
-                    3'b000: ALUControl = 5'b10001;
-                    default: ALUControl = 5'bxxxxx;
-                  endcase
-                end
-                default: ALUControl = 5'bxxxxx;
-        endcase
-      end
-      default: case(funct3) // R-type or I-type ALU
-                 3'b000:  if (RtypeSub) 
+      2'b10: case(funct3) // R-type or I-type ALU
+                 3'b000: begin  if (RtypeSub) 
                             ALUControl = 5'b00001; // sub
                           else          
                             ALUControl = 5'b00000; // add, addi
+                 end 
                  3'b010:    ALUControl = 5'b00101; // slt, slti
                  3'b110:    ALUControl = 5'b00011; // or, ori
                  3'b111:    ALUControl = 5'b00010; // and, andi
                  default:   ALUControl = 5'bxxxxx; // ???
                endcase
+      2'b11: case({funct7,funct3})
+        10'b0000000000:ALUControl = 5'b10000;//ANDN
+        10'b0000000001:ALUControl = 5'b10001;//ORN
+        10'b0000000010:ALUControl = 5'b10010;//XNORN
+        10'b0000001000:ALUControl = 5'b10011;//MIN
+        10'b0000001001:ALUControl = 5'b10100;//MAX
+        10'b0000001010:ALUControl = 5'b10101;//MINU
+        10'b0000001011:ALUControl = 5'b10110;//MAXU
+        10'b0000010000:ALUControl = 5'b10111;//ROL
+        10'b0000010001:ALUControl = 5'b11000;//ROR
+        10'b0000011000:ALUControl = 5'b11001;//ABS
+      endcase
     endcase
 endmodule
 
@@ -373,7 +285,7 @@ module imem(input  logic [31:0] a,
   logic [31:0] RAM[63:0];
 
   initial
-      $readmemh("../tests/rvx10.hex",RAM);
+      $readmemh("../tests/riscvtest.txt",RAM);
 
   assign rd = RAM[a[31:2]]; // word aligned
 endmodule
@@ -414,16 +326,16 @@ module alu(input  logic [31:0] a, b,
       5'b00101:  result = sum[31] ^ v; // slt
       5'b00110:  result = a << b[4:0]; // sll
       5'b00111:  result = a >> b[4:0]; // srl
-      5'b01000:  result = a & (~b); // ANDN
-      5'b01001:  result = a | (~b); //ORN
-      5'b01010:  result = ~(a^b); //XNOR
-      5'b01011:  result = ($signed(a) < $signed(b)) ? a : b; //MIN
-      5'b01100:  result = ($signed(a) > $signed(b)) ? a : b; //MAX
-      5'b01101:  result = (a<b) ? a : b; //MINU
-      5'b01110:  result = (a>b) ? a : b; //MAXU
-      5'b01111:  result = (b[4:0] == 4'b0000) ? a : (a<<b[4:0]) | (a>>(32 - b[4:0])); //ROL
-      5'b10000:  result = (b[4:0] == 4'b0000) ? a : (a>>b[4:0]) | (a<<(32 - b[4:0])); //ROR
-      5'b10001:  result = (a[31] == 1'b0) ? a : -a; //ABS
+      5'b10000:  result = a& ~b;
+      5'b10001:  result = a| ~b;
+      5'b10010:  result = ~(a^b);
+      5'b10011:  result = ($signed(a) < $signed(b)) ? a : b;
+      5'b10100:  result = ($signed(a) > $signed(b)) ? a : b;
+      5'b10101:  result = (a<b)?a:b;
+      5'b10110:  result = (a>b)?a:b;
+      5'b10111:  result = (a << b[4:0]) | (a >> (32 - b[4:0]));
+      5'b11000:  result = (a >> b[4:0]) | (a << (32 - b[4:0]));
+      5'b11001:  result = (a[31])?(0-a):a;
       default: result = 32'bx;
     endcase
 
