@@ -1,224 +1,56 @@
 # RVX10 Instruction Encodings
 
-## Encoding Format
+## 🧱 1. Register Initializations (I-Type: `addi`)
 
-All RVX10 instructions use the **R-type** instruction format with opcode `0x0B` (binary `0001011`, CUSTOM-0):
+These set registers to known values before using them.
 
-```
-31        25 24    20 19    15 14  12 11     7 6      0
-+------------+--------+--------+------+--------+--------+
-|   funct7   |  rs2   |  rs1   |funct3|   rd   | opcode |
-+------------+--------+--------+------+--------+--------+
-   7 bits      5 bits   5 bits  3 bits  5 bits  7 bits
-```
-
-### Machine Code Assembly
-
-For an R-type instruction, the 32-bit machine code is assembled as:
-
-```
-inst[31:0] = (funct7 << 25) | (rs2 << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | opcode
-```
-
-## Instruction Encoding Table
-
-| Instruction | Opcode (hex) | funct7 (binary) | funct3 (binary) | rs2 Usage          |
-|-------------|--------------|-----------------|-----------------|-------------------|
-| ANDN        | 0x0B         | 0000000         | 000             | Used (operand)    |
-| ORN         | 0x0B         | 0000000         | 001             | Used (operand)    |
-| XNOR        | 0x0B         | 0000000         | 010             | Used (operand)    |
-| MIN         | 0x0B         | 0000001         | 000             | Used (operand)    |
-| MAX         | 0x0B         | 0000001         | 001             | Used (operand)    |
-| MINU        | 0x0B         | 0000001         | 010             | Used (operand)    |
-| MAXU        | 0x0B         | 0000001         | 011             | Used (operand)    |
-| ROL         | 0x0B         | 0000010         | 000             | Used (shift amt)  |
-| ROR         | 0x0B         | 0000010         | 001             | Used (shift amt)  |
-| ABS         | 0x0B         | 0000011         | 000             | Ignored (set x0)  |
-
-## Worked Encoding Examples
-
-### Example 1: ANDN x5, x6, x7
-
-Compute: `x5 = x6 & ~x7`
-
-**Field Values:**
-- opcode = `0x0B` = `0001011`
-- rd = x5 = 5 = `00101`
-- funct3 = `000`
-- rs1 = x6 = 6 = `00110`
-- rs2 = x7 = 7 = `00111`
-- funct7 = `0000000`
-
-**Bit Assembly:**
-```
-31        25 24    20 19    15 14  12 11     7 6      0
-+------------+--------+--------+------+--------+--------+
-| 0000000    | 00111  | 00110  | 000  | 00101  | 0001011|
-+------------+--------+--------+------+--------+--------+
-```
-
-**Machine Code:**
-```
-= (0x00 << 25) | (7 << 20) | (6 << 15) | (0 << 12) | (5 << 7) | 0x0B
-= 0x00000000 | 0x00700000 | 0x00030000 | 0x00000000 | 0x00000280 | 0x0000000B
-= 0x0073028B
-```
-
-**Hex Encoding:** `0x0073028B`
+| Hex Code | Assembly | Meaning |
+|-----------|-----------|----------|
+| `00500113` | `addi x2, x0, 5` | Set x2 = 5 |
+| `00C00193` | `addi x3, x0, 12` | Set x3 = 12 |
+| `FF718393` | `addi x7, x3, -9` | Set x7 = x3 − 9 |
+| `0023E233` | `or x4, x7, x2` | Bitwise OR of x7 and x2, store in x4 |
+| `0041F2B3` | `and x5, x3, x4` | Bitwise AND of x3 and x4, store in x5 |
+| `004282B3` | `add x5, x5, x4` | Add x5 + x4, store in x5 |
+| `02728863` | `beq x5, x7, <label>` | If x5 == x7, jump to label |
+| `0041A233` | `slt x4, x3, x4` | Set x4 = 1 if x3 < x4 else 0 |
+| `00020463` | `beq x4, x0, <label>` | If x4 == 0, branch |
+| `00000293` | `addi x5, x0, 0` | Set x5 = 0 |
+| `0023A233` | `slt x4, x7, x2` | Set x4 = 1 if x7 < x2 else 0 |
+| `005203B3` | `add x7, x4, x5` | x7 = x4 + x5 |
+| `402383B3` | `sub x7, x7, x2` | x7 = x7 − x2 |
+| `0471AA23` | `sw x7, 80(x3)` | Store x7 to memory address x3+80 |
+| `06002103` | `lw x2, 96(x0)` | Load word from address 96 into x2 |
+| `005104B3` | `add x9, x2, x5` | x9 = x2 + x5 |
+| `008001EF` | `jal x3, 8` | Jump and link (store return address in x3) |
 
 ---
 
-### Example 2: MIN x10, x11, x12
+## 🧩 2. Custom RVX10 Instructions (R-Type, opcode `0001011`)
 
-Compute: `x10 = min(x11, x12)` (signed comparison)
-
-**Field Values:**
-- opcode = `0x0B`
-- rd = x10 = 10 = `01010`
-- funct3 = `000`
-- rs1 = x11 = 11 = `01011`
-- rs2 = x12 = 12 = `01100`
-- funct7 = `0000001`
-
-**Bit Assembly:**
-```
-31        25 24    20 19    15 14  12 11     7 6      0
-+------------+--------+--------+------+--------+--------+
-| 0000001    | 01100  | 01011  | 000  | 01010  | 0001011|
-+------------+--------+--------+------+--------+--------+
-```
-
-**Machine Code:**
-```
-= (0x01 << 25) | (12 << 20) | (11 << 15) | (0 << 12) | (10 << 7) | 0x0B
-= 0x02000000 | 0x00C00000 | 0x00058000 | 0x00000000 | 0x00000500 | 0x0000000B
-= 0x02C5850B
-```
-
-**Hex Encoding:** `0x02C5850B`
+| Hex Code | Assembly | Meaning |
+|-----------|-----------|----------|
+| `0073028B` | `andn x5, x6, x7` | Bitwise AND NOT (x6 & ~x7) |
+| `00A4940B` | `orn x8, x9, x10` | Bitwise OR NOT (x9 | ~x10) |
+| `00D6258B` | `xnor x11, x12, x13` | Bitwise XNOR |
+| `0307870B` | `min x14, x15, x16` | x14 = minimum of x15, x16 |
+| `0339188B` | `max x17, x18, x19` | x17 = maximum of x18, x19 |
+| `036AAA0B` | `minu x20, x21, x22` | Unsigned minimum |
+| `039C3B8B` | `maxu x23, x24, x25` | Unsigned maximum |
+| `043D8D0B` | `rol x26, x27, x3` | Rotate left x27 by x3 bits |
+| `0441108B` | `ror x1, x2, x4` | Rotate right x2 by x4 bits |
+| `0602018B` | `abs x3, x4, x0` | x3 = absolute value of x4 |
 
 ---
 
-### Example 3: ROL x15, x16, x17
+## 🧾 3. Final Memory Write (Program End)
 
-Compute: `x15 = (x16 << s) | (x16 >> (32-s))` where s = x17[4:0]
+| Hex Code | Assembly | Meaning |
+|-----------|-----------|----------|
+| `01900093` | `addi x1, x0, 25` | x1 = 25 |
+| `02400113` | `addi x2, x0, 36` | x2 = 36 |
+| `04112023` | `sw x1, 64(x2)` | store 25 → memory address (36 + 64 = 100) |
 
-**Field Values:**
-- opcode = `0x0B`
-- rd = x15 = 15 = `01111`
-- funct3 = `000`
-- rs1 = x16 = 16 = `10000`
-- rs2 = x17 = 17 = `10001`
-- funct7 = `0000010`
-
-**Bit Assembly:**
-```
-31        25 24    20 19    15 14  12 11     7 6      0
-+------------+--------+--------+------+--------+--------+
-| 0000010    | 10001  | 10000  | 000  | 01111  | 0001011|
-+------------+--------+--------+------+--------+--------+
-```
-
-**Machine Code:**
-```
-= (0x02 << 25) | (17 << 20) | (16 << 15) | (0 << 12) | (15 << 7) | 0x0B
-= 0x04000000 | 0x01100000 | 0x00080000 | 0x00000000 | 0x00000780 | 0x0000000B
-= 0x0518078B
-```
-
-**Hex Encoding:** `0x0518078B`
+🟢 **This confirms successful execution when memory[100] = 25.**
 
 ---
-
-### Example 4: ABS x20, x21
-
-Compute: `x20 = |x21|` (absolute value, rs2 ignored)
-
-**Field Values:**
-- opcode = `0x0B`
-- rd = x20 = 20 = `10100`
-- funct3 = `000`
-- rs1 = x21 = 21 = `10101`
-- rs2 = x0 = 0 = `00000` (ignored, but set to x0 by convention)
-- funct7 = `0000011`
-
-**Bit Assembly:**
-```
-31        25 24    20 19    15 14  12 11     7 6      0
-+------------+--------+--------+------+--------+--------+
-| 0000011    | 00000  | 10101  | 000  | 10100  | 0001011|
-+------------+--------+--------+------+--------+--------+
-```
-
-**Machine Code:**
-```
-= (0x03 << 25) | (0 << 20) | (21 << 15) | (0 << 12) | (20 << 7) | 0x0B
-= 0x06000000 | 0x00000000 | 0x000A8000 | 0x00000000 | 0x00000A00 | 0x0000000B
-= 0x060A8A0B
-```
-
-**Hex Encoding:** `0x060A8A0B`
-
----
-
-### Example 5: MAXU x8, x9, x10
-
-Compute: `x8 = max(x9, x10)` (unsigned comparison)
-
-**Field Values:**
-- opcode = `0x0B`
-- rd = x8 = 8 = `01000`
-- funct3 = `011`
-- rs1 = x9 = 9 = `01001`
-- rs2 = x10 = 10 = `01010`
-- funct7 = `0000001`
-
-**Bit Assembly:**
-```
-31        25 24    20 19    15 14  12 11     7 6      0
-+------------+--------+--------+------+--------+--------+
-| 0000001    | 01010  | 01001  | 011  | 01000  | 0001011|
-+------------+--------+--------+------+--------+--------+
-```
-
-**Machine Code:**
-```
-= (0x01 << 25) | (10 << 20) | (9 << 15) | (3 << 12) | (8 << 7) | 0x0B
-= 0x02000000 | 0x00A00000 | 0x00048000 | 0x00003000 | 0x00000400 | 0x0000000B
-= 0x02A4B40B
-```
-
-**Hex Encoding:** `0x02A4B40B`
-
----
-
-## Complete Instruction Encodings (Summary)
-
-| Mnemonic | Assembly Example | Hex Encoding | Binary Encoding                           |
-|----------|------------------|--------------|-------------------------------------------|
-| ANDN     | andn x5,x6,x7    | 0x0073028B   | 0000000_00111_00110_000_00101_0001011     |
-| ORN      | orn x5,x6,x7     | 0x0073128B   | 0000000_00111_00110_001_00101_0001011     |
-| XNOR     | xnor x5,x6,x7    | 0x0073228B   | 0000000_00111_00110_010_00101_0001011     |
-| MIN      | min x10,x11,x12  | 0x02C5850B   | 0000001_01100_01011_000_01010_0001011     |
-| MAX      | max x10,x11,x12  | 0x02C5950B   | 0000001_01100_01011_001_01010_0001011     |
-| MINU     | minu x10,x11,x12 | 0x02C5A50B   | 0000001_01100_01011_010_01010_0001011     |
-| MAXU     | maxu x8,x9,x10   | 0x02A4B40B   | 0000001_01010_01001_011_01000_0001011     |
-| ROL      | rol x15,x16,x17  | 0x0518078B   | 0000010_10001_10000_000_01111_0001011     |
-| ROR      | ror x15,x16,x17  | 0x0518178B   | 0000010_10001_10000_001_01111_0001011     |
-| ABS      | abs x20,x21      | 0x060A8A0B   | 0000011_00000_10101_000_10100_0001011     |
-
-## Encoding Notes
-
-1. **Opcode Consistency**: All RVX10 instructions share opcode `0x0B` (CUSTOM-0)
-2. **funct7 Groups**: Instructions are grouped by funct7:
-   - `0000000`: Bitwise operations (ANDN, ORN, XNOR)
-   - `0000001`: Min/Max operations (MIN, MAX, MINU, MAXU)
-   - `0000010`: Rotation operations (ROL, ROR)
-   - `0000011`: Unary operations (ABS)
-3. **Unary Instructions**: ABS sets rs2 to x0 (register 0) by convention
-4. **Register x0**: Hardware ensures writes to x0 are ignored (hardwired to zero)
-5. **Shift Amount**: For ROL/ROR, only the lower 5 bits of rs2 are used (rs2[4:0])
-
-## Verification
-
-All encodings have been verified against the test program and successfully execute in the single-cycle RV32I processor implementation.
