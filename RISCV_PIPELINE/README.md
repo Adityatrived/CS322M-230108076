@@ -6,6 +6,8 @@
 - The **RV32I** instruction set (base RISC-V 32-bit integer instructions)
 - **10 custom ALU instructions** (the RVX10 extension)
 
+Developed as part of the course Digital Logic and Computer Architecture taught by Dr. Satyajit Das, IIT Guwahati.
+
 ### Key Features:
 - **5-Stage Pipeline**: IF → ID → EX → MEM → WB  
 - **Hazard Detection**: Automatically handles data and control hazards  
@@ -549,4 +551,12 @@ end
 
 ### Understanding RISC-V
 - [RISC-V Specification](https://riscv.org/technical/specifications/)
+
 - [RARS Simulator](https://github.com/TheThirdOne/rars) -
+
+## 🏫 Acknowledgment
+Developed under the guidance of<br>
+Dr. Satyajit Das<br>
+Assistant Professor<br>
+Department of Computer Science and Engineering<br>
+Indian Institute of Technology, Guwahati
